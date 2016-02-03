@@ -12,7 +12,7 @@ using Octokit;
 namespace Slydr
 {
     public class HomeController : Controller
-    {
+    {        
         public IActionResult Index()
         {
             return View();
@@ -23,7 +23,7 @@ namespace Slydr
             return null;
         }
     }
-
+/*
     class Temp : Controller
     {
         private async Task Default()
@@ -142,4 +142,5 @@ namespace Slydr
         }
 
     }
+    */
 }

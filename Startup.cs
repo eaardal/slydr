@@ -1,12 +1,10 @@
 using System;
 using Microsoft.AspNet.Builder;
 using Microsoft.AspNet.Hosting;
+using Microsoft.AspNet.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using Serilog;
-using Serilog.Events;
 
 namespace Slydr
 {
@@ -22,12 +20,6 @@ namespace Slydr
             if (hostingEnvironment == null) throw new ArgumentNullException(nameof(hostingEnvironment));
             _hostingEnvironment = hostingEnvironment;
 
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.RollingFile("Logs\\slydr-{Date}-verbose.log", LogEventLevel.Verbose)
-                .WriteTo.RollingFile("Logs\\slydr-{Date}-warnings.log", LogEventLevel.Warning)
-                .WriteTo.Console(LogEventLevel.Verbose)
-                .CreateLogger();
-
             Configuration = new ConfigurationBuilder()
                 .AddJsonFile("config.json")
                 .AddUserSecrets()
@@ -36,23 +28,32 @@ namespace Slydr
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddLogging();
+            //services.AddLogging();
             services.AddMvc().AddJsonOptions(o => o.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver());
         }
 
-        public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app)
         {
-            loggerFactory.AddSerilog();
-            _log = loggerFactory.CreateLogger("slydr");
+            ConfigureExceptionHandling(app);
+
+            //_log = loggerFactory.CreateLogger("slydr");
 
             app.UseIISPlatformHandler();
 
             app.UseMvc();
         }
-        
-        public static void Main(string[] args)
+
+        private void ConfigureExceptionHandling(IApplicationBuilder app)
         {
-            Microsoft.AspNet.Hosting.WebApplication.Run<Startup>(args);
+            if (_hostingEnvironment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler(
+                    subApp => subApp.Run(async context => await context.Response.WriteAsync("An error occurred :(")));
+            }
         }
     }
 }
